@@ -50,12 +50,12 @@ def readAudioData(path, overlap, sample_rate, chunk_duration):
     # Open file with librosa (uses ffmpeg or libav)
     sig, rate = librosa.load(path, sr=sample_rate, mono=True, res_type='kaiser_fast')
 
-    sig = filter_for_birdnet(
-    sig,
-    rate,
-    highpass_hz=180.0,
-    notch_frequencies=(),
-    )
+    # sig = filter_for_birdnet(
+    # sig,
+    # rate,
+    # highpass_hz=180.0,
+    # notch_frequencies=(),
+    # )
 
 #     sig = soft_stationary_denoise(
 #     sig,
