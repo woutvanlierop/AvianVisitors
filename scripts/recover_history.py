@@ -20,10 +20,31 @@ from datetime import datetime
 from pathlib import Path
 
 # Configuration
-EXTRACTED_DIR = os.path.expanduser('~/BirdSongs/Extracted/By_Date')
-DB_PATH = os.path.expanduser('~/BirdNET-Pi/scripts/birds.db')
-LABELS_FILE = os.path.expanduser('~/BirdNET-Pi/model/labels.txt')
-BIRDDB_BACKUP = os.path.expanduser('~/BirdNET-Pi/BirdDB.txt')
+HOME_DIR = Path.home()
+BIRDNET_ROOT_CANDIDATES = [
+    HOME_DIR / 'BirdNET-Pi',
+    Path('/home/birdnet/BirdNET-Pi'),
+    Path('/home/pi/BirdNET-Pi'),
+    Path('/home/avian/BirdNET-Pi'),
+    Path('/home/birdnetpi/BirdNET-Pi'),
+]
+BIRDNET_ROOT = next((p for p in BIRDNET_ROOT_CANDIDATES if p.exists()), HOME_DIR / 'BirdNET-Pi')
+
+EXTRACTED_DIR_CANDIDATES = [
+    HOME_DIR / 'BirdSongs' / 'Extracted' / 'By_Date',
+    BIRDNET_ROOT / 'BirdSongs' / 'Extracted' / 'By_Date',
+]
+EXTRACTED_DIR = next((p for p in EXTRACTED_DIR_CANDIDATES if p.exists()), EXTRACTED_DIR_CANDIDATES[0])
+
+DB_PATH = BIRDNET_ROOT / 'scripts' / 'birds.db'
+LABELS_FILE_CANDIDATES = [
+    BIRDNET_ROOT / 'model' / 'labels.txt',
+    BIRDNET_ROOT / 'model' / 'BirdNET_GLOBAL_6K_V2.4_Model_FP16_Labels.txt',
+    BIRDNET_ROOT / 'model' / 'BirdNET_6K_GLOBAL_MODEL_Labels.txt',
+    BIRDNET_ROOT / 'model' / 'BirdNET_GLOBAL_6K_V2.4_MData_Model_FP16_Labels.txt',
+]
+LABELS_FILE = next((p for p in LABELS_FILE_CANDIDATES if p.exists()), LABELS_FILE_CANDIDATES[0])
+BIRDDB_BACKUP = BIRDNET_ROOT / 'BirdDB.txt'
 
 # Default values (will be read from config if available)
 LATITUDE = -1
@@ -191,6 +212,7 @@ def build_english_scientific_mapping():
     manual_map = {
         'Black Redstart': 'Phoenicurus ochruros',
         'Carrion Crow': 'Corvus corone',
+        'Common Chiffchaff': 'Phylloscopus collybita',
         'Common House-Martin': 'Delichon urbicum',
         'Common Kingfisher': 'Alcedo atthis',
         'Common Raven': 'Corvus corax',
@@ -199,9 +221,11 @@ def build_english_scientific_mapping():
         'Dunlin': 'Calidris alpina',
         'Dunnock': 'Prunella modularis',
         'Eurasian Blackbird': 'Turdus merula',
+        'Eurasian Blackcap': 'Sylvia atricapilla',
         'Eurasian Blue Tit': 'Cyanistes caeruleus',
         'Eurasian Bullfinch': 'Pyrrhula pyrrhula',
         'Eurasian Collared-Dove': 'Streptopelia decaocto',
+        'Eurasian Coot': 'Fulica atra',
         'Eurasian Curlew': 'Numenius arquata',
         'Eurasian Golden Oriole': 'Oriolus oriolus',
         'Eurasian Green Woodpecker': 'Picus viridis',
@@ -209,8 +233,20 @@ def build_english_scientific_mapping():
         'Eurasian Linnet': 'Linaria cannabina',
         'Eurasian Magpie': 'Pica pica',
         'Eurasian Moorhen': 'Gallinula chloropus',
+        'Eurasian Skylark': 'Alauda arvensis',
+        'Eurasian Wren': 'Troglodytes troglodytes',
+        'European Goldfinch': 'Carduelis carduelis',
+        'European Robin': 'Erithacus rubecula',
+        'European Stonechat': 'Saxicola rubicola',
         'Gadwall': 'Anas strepera',
+        'Gray Heron': 'Ardea cinerea',
+        'Gray Wagtail': 'Motacilla cinerea',
+        'Graylag Goose': 'Anser anser',
+        'Great Spotted Woodpecker': 'Dendrocopos major',
         'Great Tit': 'Parus major',
+        'Green-winged Teal': 'Anas crecca',
+        'Hawfinch': 'Coccothraustes coccothraustes',
+        'Long-tailed Tit': 'Aegithalos caudatus',
         'Marsh Tit': 'Poecile palustris',
         'Mute Swan': 'Cygnus olor',
         'Rock Pigeon': 'Columba livia',
@@ -254,9 +290,16 @@ def recover_database(detections, dry_run=False):
         print("\n" + "="*80)
         print("DRY RUN - No changes will be made to the database")
         print("="*80 + "\n")
-    
+
+    db_path = str(DB_PATH)
+
     if not detections:
         print("ERROR: No detections found to recover!")
+        return
+
+    if not os.path.exists(db_path):
+        print(f"ERROR: Database not found at {db_path}")
+        print("The BirdNET-Pi install may be in a different directory or the service may not have been initialized yet.")
         return
     
     print(f"Found {len(detections)} detection records to restore\n")
@@ -335,12 +378,15 @@ def recover_database(detections, dry_run=False):
 
 def main():
     dry_run = '--dry-run' in sys.argv
-    
+
     print("Bird Detection History Recovery Tool")
     print("="*80)
+    print(f"BirdNET-Pi root: {BIRDNET_ROOT}")
     print(f"Database: {DB_PATH}")
-    print(f"Extracted files dir: {EXTRACTED_DIR}\n")
-    
+    print(f"Extracted files dir: {EXTRACTED_DIR}")
+    print(f"Labels file: {LABELS_FILE}")
+    print(f"Backup file: {BIRDDB_BACKUP}\n")
+
     # Get config values
     get_config_values()
     
